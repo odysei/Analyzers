@@ -7,12 +7,15 @@ process.load("FWCore.MessageLogger.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.load( "Configuration.StandardSequences.FrontierConditions_GlobalTag_cff" )
-process.GlobalTag.globaltag = 'PHYS14_25_V2::All'
+#process.GlobalTag.globaltag = 'PHYS14_25_V2::All'
+process.GlobalTag.globaltag = 'MCRUN2_74_V9::All'
+
+process.load("SimGeneral.HepPDTESSource.pythiapdt_cfi")
 
 process.options   = cms.untracked.PSet( wantSummary = cms.untracked.bool(True) )
 
 process.maxEvents = cms.untracked.PSet(
-	input = cms.untracked.int32(5000)
+	input = cms.untracked.int32(-1)
 )
 
 from JetMETCorrections.Configuration.JetCorrectionServices_cff import *
@@ -37,12 +40,22 @@ process.ak4PFchsL1L2L3 = cms.ESProducer("JetCorrectionESChain",
 
 process.source = cms.Source("PoolSource",
 	fileNames = cms.untracked.vstring(
+        'file:/eos/uscms/store/user/ztao/ttHToTauTau_M125_13TeV_Spring15_miniAOD.root'
+        #'file:/eos/uscms/store/user/ztao/ttHToTauTau_M125_13TeV_Spring15_AOD.root'
+        #'file:/eos/uscms/store/user/ztao/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8_miniAOD.root'
+
+        #'/store/mc/RunIISpring15DR74/ttHToTT_M125_13TeV_powheg_pythia8/MINIAODSIM/Asympt25ns_MCRUN2_74_V9-v2/20000/0249345F-032D-E511-A21D-0025905C95F8.root'
+        #/store/mc/RunIISpring15DR74/ttHToTT_M125_13TeV_powheg_pythia8/AODSIM/Asympt25ns_MCRUN2_74_V9-v2/20000/008B5DD7-EB2B-E511-8E73-0025904C63F8.root
+        #'/store/mc/RunIISpring15MiniAODv2/TTJets_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/74X_mcRun2_asymptotic_v2-v3/60000/00181849-176A-E511-8B11-848F69FD4C94.root'
+
+        #'/store/mc/RunIISpring15DR74/ttHJetToTT_M125_13TeV_amcatnloFXFX_madspin_pythia8/MINIAODSIM/Asympt25ns_MCRUN2_74_V9_ext3-v1/30000/028D30EF-2530-E511-9C88-002590AC4CEC.root'
         #'root://cms-xrd-global.cern.ch///store/mc/RunIISpring15DR74/ttHJetToTT_M125_13TeV_amcatnloFXFX_madspin_pythia8/AODSIM/Asympt25ns_MCRUN2_74_V9_ext1-v1/00000/046ADB1C-9C07-E511-AA40-002590A887F2.root'
-		#'/store/user/puigh/TTHSync/ttjets_phys14_20bx25_withfatjets_v2.root'
-            '/store/mc/Phys14DR/TTbarH_M-125_13TeV_amcatnlo-pythia8-tauola/MINIAODSIM/PU20bx25_tsg_PHYS14_25_V1-v2/00000/08B36E8F-5E7F-E411-9D5A-002590200AE4.root'
-            #'/store/mc/Phys14DR/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/00C90EFC-3074-E411-A845-002590DB9262.root'
-            #'/store/mc/Spring14miniaod/TTbarH_M-125_13TeV_amcatnlo-pythia8-tauola/MINIAODSIM/PU20bx25_POSTLS170_V5-v1/00000/1E4F9BDC-3E1E-E411-A56C-001E67396EAA.root'
-            #'/store/mc/Spring14miniaod/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_POSTLS170_V5-v2/00000/004C6DA7-FB03-E411-96BD-0025905A497A.root'
+    
+	#'/store/user/puigh/TTHSync/ttjets_phys14_20bx25_withfatjets_v2.root'
+        #'/store/mc/Phys14DR/TTbarH_M-125_13TeV_amcatnlo-pythia8-tauola/MINIAODSIM/PU20bx25_tsg_PHYS14_25_V1-v2/00000/08B36E8F-5E7F-E411-9D5A-002590200AE4.root'
+        #'/store/mc/Phys14DR/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_PHYS14_25_V1-v1/00000/00C90EFC-3074-E411-A845-002590DB9262.root'
+        #'/store/mc/Spring14miniaod/TTbarH_M-125_13TeV_amcatnlo-pythia8-tauola/MINIAODSIM/PU20bx25_POSTLS170_V5-v1/00000/1E4F9BDC-3E1E-E411-A56C-001E67396EAA.root'
+        #'/store/mc/Spring14miniaod/TTJets_MSDecaysCKM_central_Tune4C_13TeV-madgraph-tauola/MINIAODSIM/PU20bx25_POSTLS170_V5-v2/00000/004C6DA7-FB03-E411-96BD-0025905A497A.root'
 	)
 )
 
@@ -50,7 +63,13 @@ process.ttHsyncExercise = cms.EDAnalyzer('CU_ttH_EDA',
 )
 
 process.TFileService = cms.Service("TFileService",
-	fileName = cms.string('Outputs/CU_ttH_EDA_output.root')
+	#fileName = cms.string('Outputs/CU_ttH_EDA_output_sig.root')
+        #fileName = cms.string('Outputs/CU_ttH_EDA_output_TTJets.root')
+        fileName = cms.string('CU_ttH_EDA_output.root')
 )
 
+
 process.p = cms.Path(process.ttHsyncExercise)
+
+
+

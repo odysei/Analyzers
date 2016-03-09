@@ -290,7 +290,7 @@ int CU_ttH_EDA::Top_tagger(Handle<boosted::HTTTopJetCollection> top_jets,
 			continue;
 
 		// must be top-tagged
-		if (!BoostedUtils::GetTopTag(*topJet))
+		if (toptagger.GetTopTaggerOutput(*topJet)<=-1) 
 			continue;
 
 		++local.n_ttags;
@@ -673,142 +673,69 @@ void CU_ttH_EDA::Check_Fill_Print_elemuj(CU_ttH_EDA_event_vars &local)
 		return;
 }
 
-void CU_ttH_EDA::Check_Fill_Print_dimutauh(CU_ttH_EDA_event_vars &local)
+/*
+void CU_ttH_EDA::Check_Fill_Print_dileptauh(CU_ttH_EDA_event_vars &local)
 {
 	int fill_itr = 0;
 
-	h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++); // fill 0.5 first
+	// All events 
+	h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++); // fill 0.5 first
+	// Weighed?
 
-	if (local.pass_double_mu)
-		h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++);
+	// Pass single lepton trigger
+	if (local.pass_single_e or local.pass_single_mu)
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
 	else
 		return;
 
-	bool SameSignLeptons = false;
-	if (local.n_muons >= 2) {
+	// Cut on number of taus
+	if (local.n_taus_loose >= 1)
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
+	else
+		return;		
+
+	// At least two leptons
+	if (local.n_electrons + local.n_muons >= 2)
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
+	else
+		return;
 		
-		for (int i=0; i<local.n_muons; ++i) {
-			for (int j=i+1; j<local.n_muons; ++j) {
-				if (local.mu_selected_sorted[i].charge() ==
-					local.mu_selected_sorted[j].charge())
-					SameSignLeptons = true;
-			}
-		}
-
-		if (SameSignLeptons)
-			h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++);
-		else
-			return;	
-	}	
-	else
-		return;
-
-	if (local.n_taus >= 1)
-		h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-	
-	if (local.n_jets >= min_njets)
-		h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-
-	if (local.n_btags >= min_nbtags)
-		h_tth_syncex_dimutauh->Fill(0.5 + fill_itr++);
-	else
-		return;	
-}
-
-void CU_ttH_EDA::Check_Fill_Print_dieletauh(CU_ttH_EDA_event_vars &local)
-{
-	int fill_itr = 0;
-
-	h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++); // fill 0.5 first
-
-	if (local.pass_double_e)
-		h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-
+	// Same sign leptons
 	bool SameSignLeptons = false;
-	if (local.n_electrons >= 2) {
+	if (local.n_electrons + local.n_muons > 2)
+		SameSignLeptons = true;
+	else {
 		
-		for (int i=0; i<local.n_electrons; ++i) {
-			for (int j=i+1; j<local.n_electrons; ++j) {
-				if (local.e_selected_sorted[i].charge() ==
-					local.e_selected_sorted[j].charge())
-					SameSignLeptons = true;
-			}
+		if (local.n_electrons == 2) {
+			if (local.e_selected_sorted[0].charge() == local.e_selected_sorted[1].charge())
+				SameSignLeptons = true;
 		}
-
-		if (SameSignLeptons)
-			h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++);
-		else
-			return;	
-	}	
-	else
-		return;
-
-	if (local.n_taus >= 1)
-		h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-	
-	if (local.n_jets >= min_njets)
-		h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-
-	if (local.n_btags >= min_nbtags)
-		h_tth_syncex_dieletauh->Fill(0.5 + fill_itr++);
-	else
-		return;	
-}
-
-void CU_ttH_EDA::Check_Fill_Print_elemutauh(CU_ttH_EDA_event_vars &local)
-{
-	int fill_itr = 0;
-
-	h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++); // fill 0.5 first
-
-	if (local.pass_elemu)
-		h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++);
-	else
-		return;
-
-	bool SameSignLeptons = false;
-	if (local.n_electrons >= 1 and local.n_muons >= 1) {
-
-		for (int i=0; i<local.n_electrons; ++i) {
-			for (int j=0; j<local.n_muons; ++j) {
-				if (local.e_selected_sorted[i].charge() ==
-					local.mu_selected_sorted[j].charge())
-					SameSignLeptons = true;
-			}
+		else if (local.n_muons == 2) {
+			if (local.mu_selected_sorted[0].charge() == local.mu_selected_sorted[1].charge())
+				SameSignLeptons = true;
 		}
-
-		if (SameSignLeptons)
-			h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++);
-		else
-			return;
+		else {
+			if (local.e_selected_sorted[0].charge() == local.mu_selected_sorted[0].charge())
+				SameSignLeptons = true;
+		}
+		
 	}
-	else
-		return;
 
-	if (local.n_taus >= 1)
-		h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++);
+	if (SameSignLeptons)
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
 	else
 		return;
 	
 	if (local.n_jets >= min_njets)
-		h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++);
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
 	else
 		return;
 
 	if (local.n_btags >= min_nbtags)
-		h_tth_syncex_elemutauh->Fill(0.5 + fill_itr++);
+		h_tth_syncex_dileptauh->Fill(0.5 + fill_itr++);
 	else
 		return;
+	
 }
 
 void CU_ttH_EDA::Check_Fill_Print_eleditauh(CU_ttH_EDA_event_vars &local) {
@@ -826,21 +753,21 @@ void CU_ttH_EDA::Check_Fill_Print_eleditauh(CU_ttH_EDA_event_vars &local) {
 	else
 		return;
 
-	if (local.n_taus >= 2)
+	if (local.n_taus_loose >= 2)
 		h_tth_syncex_eleditauh->Fill(0.5 + fill_itr++);
 	else
 		return;
 
 	double mTT = -99;
 	TLorentzVector tau1,tau2;
-	tau1.SetPtEtaPhiM(local.tau_selected_sorted[0].pt(),
-					  local.tau_selected_sorted[0].eta(),
-					  local.tau_selected_sorted[0].phi(),
-					  local.tau_selected_sorted[0].mass());
-	tau2.SetPtEtaPhiM(local.tau_selected_sorted[1].pt(),
-					  local.tau_selected_sorted[1].eta(),
-					  local.tau_selected_sorted[1].phi(),
-					  local.tau_selected_sorted[1].mass());
+	tau1.SetPtEtaPhiM(local.tau_selected_sorted_loose[0].pt(),
+					  local.tau_selected_sorted_loose[0].eta(),
+					  local.tau_selected_sorted_loose[0].phi(),
+					  local.tau_selected_sorted_loose[0].mass());
+	tau2.SetPtEtaPhiM(local.tau_selected_sorted_loose[1].pt(),
+					  local.tau_selected_sorted_loose[1].eta(),
+					  local.tau_selected_sorted_loose[1].phi(),
+					  local.tau_selected_sorted_loose[1].mass());
 	mTT = (tau1+tau2).M();
 	if (mTT > 120 and mTT < 130)
 		h_tth_syncex_eleditauh->Fill(0.5 + fill_itr++);
@@ -874,21 +801,21 @@ void CU_ttH_EDA::Check_Fill_Print_muditauh(CU_ttH_EDA_event_vars &local) {
 	else
 		return;
 
-	if (local.n_taus >= 2)
+	if (local.n_taus_loose >= 2)
 		h_tth_syncex_muditauh->Fill(0.5 + fill_itr++);
 	else
 		return;
 
 	double mTT = -99;
 	TLorentzVector tau1,tau2;
-	tau1.SetPtEtaPhiM(local.tau_selected_sorted[0].pt(),
-					  local.tau_selected_sorted[0].eta(),
-					  local.tau_selected_sorted[0].phi(),
-					  local.tau_selected_sorted[0].mass());
-	tau2.SetPtEtaPhiM(local.tau_selected_sorted[1].pt(),
-					  local.tau_selected_sorted[1].eta(),
-					  local.tau_selected_sorted[1].phi(),
-					  local.tau_selected_sorted[1].mass());
+	tau1.SetPtEtaPhiM(local.tau_selected_sorted_loose[0].pt(),
+					  local.tau_selected_sorted_loose[0].eta(),
+					  local.tau_selected_sorted_loose[0].phi(),
+					  local.tau_selected_sorted_loose[0].mass());
+	tau2.SetPtEtaPhiM(local.tau_selected_sorted_loose[1].pt(),
+					  local.tau_selected_sorted_loose[1].eta(),
+					  local.tau_selected_sorted_loose[1].phi(),
+					  local.tau_selected_sorted_loose[1].mass());
 	mTT = (tau1+tau2).M();
 	if (mTT > 120 and mTT < 130)
 		h_tth_syncex_muditauh->Fill(0.5 + fill_itr++);
@@ -905,7 +832,7 @@ void CU_ttH_EDA::Check_Fill_Print_muditauh(CU_ttH_EDA_event_vars &local) {
 	else
 		return;
 }
-
+*/
 
 template <class lepton>
 int CU_ttH_EDA::Print_event_in_file1(FILE *file, lepton &lpt,
@@ -1082,6 +1009,200 @@ int CU_ttH_EDA::Print_event_in_file1_dilepton(FILE *file, lep1 &lepton1,
 }
 
 ///
+bool CU_ttH_EDA::pass_cut(CU_ttH_EDA_event_vars &local, string cut)
+{
+	if (cut == "single_lep_trig")
+		return (local.pass_single_e or local.pass_single_mu);
+
+	else if (cut == "single_e_trig")
+		return (local.pass_single_e);
+
+	else if (cut == "single_mu_trig")
+		return (local.pass_single_mu);
+
+	else if (cut == ">= 1 e")
+		return (local.n_electrons >= 1);
+
+	else if (cut == ">= 1 mu")
+		return (local.n_muons >= 1);
+	
+	else if (cut == ">= 1 tau")
+		return (local.n_taus_noniso >= 1);
+
+	else if (cut == ">= 2 taus")
+		return (local.n_taus_noniso >= 2);
+	
+	else if (cut == ">= 2 leptons")
+		return (local.n_electrons + local.n_muons >=2);
+
+	else if (cut == "same sign leptons") {
+		std::vector<int> charges;
+		for (auto & e: local.e_selected) {
+			charges.push_back(e.charge());
+		}
+		for (auto & mu: local.mu_selected) {
+			charges.push_back(mu.charge());
+		}
+		
+		if (charges.size() > 2)
+			return true;
+		else if (charges.size() == 2)
+			return (charges[0]==charges[1]);
+		else
+			return false;
+	}
+
+	else if (cut == "100<mTT<150") {
+		double mTT = -99;
+		TLorentzVector tau1,tau2;
+		tau1.SetPtEtaPhiM(local.tau_selected_sorted_loose[0].pt(),
+						  local.tau_selected_sorted_loose[0].eta(),
+						  local.tau_selected_sorted_loose[0].phi(),
+						  local.tau_selected_sorted_loose[0].mass());
+		tau2.SetPtEtaPhiM(local.tau_selected_sorted_loose[1].pt(),
+						  local.tau_selected_sorted_loose[1].eta(),
+						  local.tau_selected_sorted_loose[1].phi(),
+						  local.tau_selected_sorted_loose[1].mass());
+		mTT = (tau1+tau2).M();
+		return (mTT>100 and mTT<150);
+	}
+	
+	else if (cut == "min_njets")
+		return (local.n_jets >= min_njets);
+
+	else if (cut == "min_nbtags")
+		return (local.n_btags >= min_nbtags);
+		
+	else
+		return false;
+}
+
+bool CU_ttH_EDA::pass_multi_cuts(CU_ttH_EDA_event_vars &local,
+								 std::vector<string> cuts,
+								 bool draw_cut_flow=false,
+								 TH1D* hist=NULL, int start_bin=1)
+{	
+	if (cuts.size()==0)
+		return false;
+	
+	if (draw_cut_flow and start_bin == 1) {
+		// All events
+		hist->Fill(0.5); // fill 0.5 first
+		// Weighted events
+		//hist->Fill(1.5, weight_gen);
+	}
+	
+	bool passCuts = true;
+	for (auto & icut : cuts) {
+		passCuts = passCuts and pass_cut(local,icut);
+
+		if (!passCuts)
+			return false;
+		
+		if (draw_cut_flow)
+			hist->Fill((start_bin++)+0.5);
+	}
+
+	return true;
+}
+
+///
+void CU_ttH_EDA::Fill_Tau_Eff_Hist(CU_ttH_EDA_gen_vars &gen,
+					   CU_ttH_EDA_event_vars &local)
+{
+	// Note: |eta| <= 2.3  pT > 20 GeV cut on genTau
+	int nGenTau = 0;
+	for (size_t i = 0; i < gen.x_daughters.size(); ++i) {
+		if ( abs(gen.x_daughters[i].pdgId()) != 15)  // check if it is tau
+			continue;
+		if (gen.tau_class[i] != 1)  // check if it is hadronic
+			continue;
+		if (gen.x_daughters[i].pt() < 20
+			or abs(gen.x_daughters[i].eta()) > 2.3)  // pT and eta cuts
+			continue;
+		
+		++nGenTau;
+		h_genHadTau_pt  -> Fill(gen.x_daughters[i].pt());
+		h_genHadTau_eta -> Fill(gen.x_daughters[i].eta());
+		h_genHadTau_phi -> Fill(gen.x_daughters[i].phi());
+	}
+	h_num_genHadTau -> Fill(nGenTau);
+
+	int nTau_noniso = 0;
+	for ( auto & itau : local.tau_selected_noniso ) {
+		const reco::GenParticle* genTau = getGenTau(itau);
+		if (!genTau) continue;  // check if there is associated genTau
+		if ( genTau->pt() < 20 or abs(genTau->eta()) > 2.3 )
+			continue;
+
+		++nTau_noniso;
+		h_selectedTau_noniso_genpt  -> Fill(genTau->pt());
+		h_selectedTau_noniso_geneta -> Fill(genTau->eta());
+		h_selectedTau_noniso_genphi -> Fill(genTau->phi());
+	}
+	h_num_selectedTau_noniso -> Fill(nTau_noniso);
+
+	int nTau_loose = 0;
+	for ( auto & itau : local.tau_selected_loose ) {
+		const reco::GenParticle* genTau = getGenTau(itau);
+		if (!genTau) continue;  // check if there is associated genTau
+		if ( genTau->pt() < 20 or abs(genTau->eta()) > 2.3 )
+			continue;
+
+		++nTau_loose;
+		h_selectedTau_loose_genpt  -> Fill(genTau->pt());
+		h_selectedTau_loose_geneta -> Fill(genTau->eta());
+		h_selectedTau_loose_genphi -> Fill(genTau->phi());
+	}
+	h_num_selectedTau_loose -> Fill(nTau_loose);
+	
+	int nTau_medium = 0;
+	for ( auto & itau : local.tau_selected_medium ) {
+		const reco::GenParticle* genTau = getGenTau(itau);
+		if (!genTau) continue;  // check if there is associated genTau
+		if ( genTau->pt() < 20 or abs(genTau->eta()) > 2.3 )
+			continue;
+
+		++nTau_medium;
+		h_selectedTau_medium_genpt  -> Fill(genTau->pt());
+		h_selectedTau_medium_geneta -> Fill(genTau->eta());
+		h_selectedTau_medium_genphi -> Fill(genTau->phi());
+	}
+	h_num_selectedTau_medium -> Fill(nTau_medium);
+	
+	int nTau_tight = 0;
+	for ( auto & itau : local.tau_selected_tight ) {
+		const reco::GenParticle* genTau = getGenTau(itau);
+		if (!genTau) continue;  // check if there is associated genTau
+		if ( genTau->pt() < 20 or abs(genTau->eta()) > 2.3 )
+			continue;
+
+		++nTau_tight;
+		h_selectedTau_tight_genpt  -> Fill(genTau->pt());
+		h_selectedTau_tight_geneta -> Fill(genTau->eta());
+		h_selectedTau_tight_genphi -> Fill(genTau->phi());
+	}
+	h_num_selectedTau_tight -> Fill(nTau_tight);
+}
+
+const reco::GenParticle* CU_ttH_EDA::getGenTau(const pat::Tau& patTau) {
+	
+	std::vector<reco::GenParticleRef> associatedGenParticles = patTau.genParticleRefs();
+
+	//From Pat::Tau tutorial	
+	for (std::vector<reco::GenParticleRef>::const_iterator igen = associatedGenParticles.begin();
+		 igen != associatedGenParticles.end(); ++igen) {
+		if ( igen->isAvailable() ) {
+			const reco::GenParticleRef& genParticle = (*igen);
+			if ( abs(genParticle->pdgId()) == 15 )
+				return genParticle.get();;
+		}
+	}
+
+	return 0;
+}
+
+///
 void CU_ttH_EDA::Get_GenInfo(Handle<reco::GenParticleCollection> pruned,
 							 Handle<pat::PackedGenParticleCollection> packed,
 							 CU_ttH_EDA_gen_vars &gen)
@@ -1093,7 +1214,7 @@ void CU_ttH_EDA::Get_GenInfo(Handle<reco::GenParticleCollection> pruned,
 
 		if (ndaugs == 0)
 			continue;
-
+		
 		const reco::Candidate *d = p->daughter(0);
 		if (p->pdgId() == d->pdgId())
 			continue;
@@ -1105,13 +1226,16 @@ void CU_ttH_EDA::Get_GenInfo(Handle<reco::GenParticleCollection> pruned,
 
 			// -- top daughters --
 			for (size_t j = 0; j < (unsigned)ndaugs; ++j) {
-				const reco::Candidate *tdaug = p->daughter(j);
+				const reco::Candidate *immed_tdaug = p->daughter(j);
+				const reco::Candidate *tdaug = get_last_in_decay_chain(immed_tdaug);
+				// TO BE CHECKED: keep first or last b in the chain?		
 				gen.top_daughters.push_back(*tdaug);
 
 				// -- w daughters --
 				if (abs(tdaug->pdgId()) == 24) {
+					
 					int ndaugs_w = tdaug->numberOfDaughters();
-
+					
 					for (size_t k = 0; k < (unsigned)ndaugs_w; ++k) {
 						const reco::Candidate *wdaug = tdaug->daughter(k);
 						gen.w_daughters.push_back(*wdaug);
@@ -1122,136 +1246,56 @@ void CU_ttH_EDA::Get_GenInfo(Handle<reco::GenParticleCollection> pruned,
 
 		}
 		// -- mediator --
-		else if (p->pdgId() == 25 ||
-				 p->pdgId()== 21 || p->pdgId() == 22 || p->pdgId() == 23) {
+		else if (p->pdgId() == 25 /*|| p->pdgId()== 21 || p->pdgId() == 22 || p->pdgId() == 23*/) {
 
 			// ---------------------------------------------------------------------
 			// print decay chain
-			bool printDetails = false;
-			if (p->pdgId() == 21 || p->pdgId() == 23) {
-				int tmp_index = 0;
-				cout <<"index"<< "\t"<< "id"<< "\t"<< "stat"<< "\t"<< "mother"
-					 << "\t"<< "nDaug";
-				if (printDetails)
-					cout << "\t"<< "pt"<< "\t"<< "eta"<< "\t"<< "phi" << endl;
-				else
-					cout << endl;
-			
-				cout << tmp_index <<"\t"<< p->pdgId() << "\t" << p->status()
-					 <<"\t"<< "n/a"<<"\t"<< p->numberOfDaughters();
-				if (printDetails)
-					cout << "\t" << p->pt() << "\t" << p->eta() << "\t"
-						 << p->phi() << endl;
-				else
-					cout << endl;
-			
-				printDecayChain(*p, tmp_index, 0, printDetails);
-			}
+			// bool printDetails = false;
+			// if (p->pdgId() == 21 || p->pdgId() == 23) {
+			//	int tmp_index = 0;
+			//	cout <<"index"<< "\t"<< "id"<< "\t"<< "stat"<< "\t"<< "mother"
+			//		 << "\t"<< "nDaug";
+			//	if (printDetails)
+			//		cout << "\t"<< "pt"<< "\t"<< "eta"<< "\t"<< "phi" << endl;
+			//	else
+			//		cout << endl;
+			//
+			//	cout << tmp_index <<"\t"<< p->pdgId() << "\t" << p->status()
+			//		 <<"\t"<< "n/a"<<"\t"<< p->numberOfDaughters();
+			//	if (printDetails)
+			//		cout << "\t" << p->pt() << "\t" << p->eta() << "\t"
+			//			 << p->phi() << endl;
+			//	else
+			//		cout << endl;
+			//
+			//	printDecayChain(*p, tmp_index, 0, printDetails);
+			//}
 			// ---------------------------------------------------------------------
 
 			gen.x.push_back(*p);
 
 			// -- mediator daughters --
 			for (size_t j = 0; j < (unsigned)ndaugs; ++j) {
-				const reco::Candidate *xdaug = p->daughter(j);
+				const reco::Candidate *immed_xdaug = p->daughter(j);
+				const reco::Candidate *xdaug = get_last_in_decay_chain(immed_xdaug);
 				gen.x_daughters.push_back(*xdaug);
+
+				// -- tau and tau daughers --
+				if (abs(xdaug->pdgId()) == 15) {
+					//int ndaugs_tau = xdaug->numberOfDaughters();
+					std::vector<const reco::Candidate*> stabledaughters;
+					get_stable_daughters(*xdaug,stabledaughters);
+					gen.tau_class.push_back( tau_classifier(stabledaughters) );
+				}
+				else
+					gen.tau_class.push_back(-1);  // not applicable
+				
 			} // end of mediator daughter loop
 
 		} else
 			continue;
 
 	} // end of pruned loop
-}
-
-void CU_ttH_EDA::Write_to_Tree(CU_ttH_EDA_gen_vars &gen, TTree *eventTree)
-{
-	// clear variables
-	x_pdgId.clear();
-	x_status.clear();
-	x_pt.clear();
-	x_eta.clear();
-	x_phi.clear();
-	x_mass.clear();
-
-	top_pdgId.clear();
-	top_status.clear();
-	top_pt.clear();
-	top_eta.clear();
-	top_phi.clear();
-	top_mass.clear();
-
-	xDaug_pdgId.clear();
-	xDaug_status.clear();
-	xDaug_pt.clear();
-	xDaug_eta.clear();
-	xDaug_phi.clear();
-	xDaug_mass.clear();
-
-	topDaug_pdgId.clear();
-	topDaug_status.clear();
-	topDaug_pt.clear();
-	topDaug_eta.clear();
-	topDaug_phi.clear();
-	topDaug_mass.clear();
-
-	wDaug_pdgId.clear();
-	wDaug_status.clear();
-	wDaug_pt.clear();
-	wDaug_eta.clear();
-	wDaug_phi.clear();
-	wDaug_mass.clear();
-
-	// mediators
-	for (size_t i = 0; i < gen.x.size(); ++i) {
-		x_pdgId.push_back(gen.x[i].pdgId());
-		x_status.push_back(gen.x[i].status());
-		x_pt.push_back(gen.x[i].pt());
-		x_eta.push_back(gen.x[i].eta());
-		x_phi.push_back(gen.x[i].phi());
-		x_mass.push_back(gen.x[i].mass());
-	}
-
-	// tops
-	for (size_t i = 0; i < gen.tops.size(); ++i) {
-		top_pdgId.push_back(gen.tops[i].pdgId());
-		top_status.push_back(gen.tops[i].status());
-		top_pt.push_back(gen.tops[i].pt());
-		top_eta.push_back(gen.tops[i].eta());
-		top_phi.push_back(gen.tops[i].phi());
-		top_mass.push_back(gen.tops[i].mass());
-	}
-
-	// mediator daughters
-	for (size_t i = 0; i < gen.x_daughters.size(); ++i) {
-		xDaug_pdgId.push_back(gen.x_daughters[i].pdgId());
-		xDaug_status.push_back(gen.x_daughters[i].status());
-		xDaug_pt.push_back(gen.x_daughters[i].pt());
-		xDaug_eta.push_back(gen.x_daughters[i].eta());
-		xDaug_phi.push_back(gen.x_daughters[i].phi());
-		xDaug_mass.push_back(gen.x_daughters[i].mass());
-	}
-
-	// top daughters
-	for (size_t i = 0; i < gen.top_daughters.size(); ++i) {
-		topDaug_pdgId.push_back(gen.top_daughters[i].pdgId());
-		topDaug_status.push_back(gen.top_daughters[i].status());
-		topDaug_pt.push_back(gen.top_daughters[i].pt());
-		topDaug_eta.push_back(gen.top_daughters[i].eta());
-		topDaug_phi.push_back(gen.top_daughters[i].phi());
-		topDaug_mass.push_back(gen.top_daughters[i].mass());
-	}
-
-	// w daughters
-	for (size_t i = 0; i < gen.w_daughters.size(); ++i) {
-		wDaug_pdgId.push_back(gen.w_daughters[i].pdgId());
-		wDaug_status.push_back(gen.w_daughters[i].status());
-		wDaug_pt.push_back(gen.w_daughters[i].pt());
-		wDaug_eta.push_back(gen.w_daughters[i].eta());
-		wDaug_phi.push_back(gen.w_daughters[i].phi());
-		wDaug_mass.push_back(gen.w_daughters[i].mass());
-	}
-
-	eventTree->Fill();
 }
 
 void CU_ttH_EDA::printDecayChain(const reco::Candidate &p, int &index,
@@ -1273,6 +1317,272 @@ void CU_ttH_EDA::printDecayChain(const reco::Candidate &p, int &index,
 		if (daug->status() != 1)
 			printDecayChain(*daug, index, index, details);
 	}
+}
+
+const reco::Candidate* CU_ttH_EDA::get_last_in_decay_chain(const reco::Candidate* p)
+{
+	int id = p->pdgId();
+	int ndaug = p->numberOfDaughters();
+	bool decay_to_itself = false;
+	int isame = -99;
+
+	for (int j = 0; j < ndaug; ++j) {
+ 		const reco::Candidate* daug = p->daughter(j);
+		if (daug -> pdgId() == id) {
+			decay_to_itself = true;
+			isame = j;
+		}
+	}
+
+	if (!decay_to_itself) {
+		const reco::Candidate* last_p = p;
+		return last_p;
+	}
+	else {	
+		const reco::Candidate* next_p = p->daughter(isame);
+		return get_last_in_decay_chain(next_p);
+	}
+}
+
+void CU_ttH_EDA::get_stable_daughters(const reco::Candidate& p,
+									 std::vector<const reco::Candidate*>& stabledaughters)
+{
+	int ndaug = p.numberOfDaughters();
+
+	for(int j = 0; j < ndaug; ++j) {
+		const reco::Candidate* daug = p.daughter(j);
+		if (daug->status() == 1) {
+			stabledaughters.push_back(daug);
+		}
+		else
+			get_stable_daughters(*daug,stabledaughters);
+	}
+}
+
+int CU_ttH_EDA::tau_classifier(std::vector<const reco::Candidate*>& stabledaughters)
+{
+	bool found_lepton = false;
+	for (auto & sdaug: stabledaughters) {
+		if( abs(sdaug->pdgId())==11 or abs(sdaug->pdgId())==13 )
+			found_lepton = true;
+	}
+
+	if (found_lepton)
+		return 0;  // leptonic
+	else
+		return 1;  // hadronic
+}
+
+//
+void CU_ttH_EDA::Write_to_Tree(CU_ttH_EDA_gen_vars &gen, CU_ttH_EDA_event_vars &local, TTree *eventTree)
+{
+	// clear variables
+	n_electrons = -99;
+	n_muons = -99;
+	n_taus_loose = -99;
+	n_taus_medium = -99;
+	n_taus_tight = -99;
+	n_jets = -99;
+	n_btags = -99;
+
+	e_pt.clear();
+	e_eta.clear();
+	e_phi.clear();
+	e_mass.clear();
+
+	mu_pt.clear();
+	mu_eta.clear();
+	mu_phi.clear();
+	mu_mass.clear();
+
+	tau_pt_noniso.clear();
+	tau_eta_noniso.clear();
+	tau_phi_noniso.clear();
+	tau_mass_noniso.clear();
+	tau_pt_loose.clear();
+	tau_eta_loose.clear();
+	tau_phi_loose.clear();
+	tau_mass_loose.clear();
+	tau_pt_medium.clear();
+	tau_eta_medium.clear();
+	tau_phi_medium.clear();
+	tau_mass_medium.clear();
+	tau_pt_tight.clear();
+	tau_eta_tight.clear();
+	tau_phi_tight.clear();
+	tau_mass_tight.clear();
+	
+	jet_pt.clear();
+	jet_eta.clear();
+	jet_phi.clear();
+	jet_mass.clear();
+
+	bjet_pt.clear();
+	bjet_eta.clear();
+	bjet_phi.clear();
+	bjet_mass.clear();
+	
+	gen_x_pdgId.clear();
+	gen_x_status.clear();
+	gen_x_pt.clear();
+	gen_x_eta.clear();
+	gen_x_phi.clear();
+	gen_x_mass.clear();
+
+	gen_top_pdgId.clear();
+	gen_top_status.clear();
+	gen_top_pt.clear();
+	gen_top_eta.clear();
+	gen_top_phi.clear();
+	gen_top_mass.clear();
+
+	gen_xDaug_pdgId.clear();
+	gen_xDaug_status.clear();
+	gen_xDaug_pt.clear();
+	gen_xDaug_eta.clear();
+	gen_xDaug_phi.clear();
+	gen_xDaug_mass.clear();
+
+	gen_tau_class.clear();
+
+	gen_topDaug_pdgId.clear();
+	gen_topDaug_status.clear();
+	gen_topDaug_pt.clear();
+	gen_topDaug_eta.clear();
+	gen_topDaug_phi.clear();
+	gen_topDaug_mass.clear();
+
+	gen_wDaug_pdgId.clear();
+	gen_wDaug_status.clear();
+	gen_wDaug_pt.clear();
+	gen_wDaug_eta.clear();
+	gen_wDaug_phi.clear();
+	gen_wDaug_mass.clear();
+
+	// Number of tags per event
+	n_electrons = local.n_electrons;
+	n_muons = local.n_muons;
+	n_taus_loose = local.n_taus_loose;
+	n_taus_medium = local.n_taus_medium;
+	n_taus_tight = local.n_taus_tight;
+	n_jets = local.n_jets;
+	n_btags = local.n_btags;
+
+	// electrons
+	for (size_t i = 0; i < local.e_selected_sorted.size(); ++i) {
+		e_pt.push_back(local.e_selected_sorted[i].pt());
+		e_eta.push_back(local.e_selected_sorted[i].eta());
+		e_phi.push_back(local.e_selected_sorted[i].phi());
+		e_mass.push_back(local.e_selected_sorted[i].mass());
+	}
+
+	// muons
+	for (size_t i = 0; i < local.mu_selected_sorted.size(); ++i) {
+		mu_pt.push_back(local.mu_selected_sorted[i].pt());
+		mu_eta.push_back(local.mu_selected_sorted[i].eta());
+		mu_phi.push_back(local.mu_selected_sorted[i].phi());
+		mu_mass.push_back(local.mu_selected_sorted[i].mass());
+	}
+
+	// taus
+	for (auto & tau : local.tau_selected_sorted_noniso) {
+		tau_pt_noniso.push_back(tau.pt());
+		tau_eta_noniso.push_back(tau.eta());
+		tau_phi_noniso.push_back(tau.phi());
+		tau_mass_noniso.push_back(tau.mass());
+	}
+	
+	for (auto & tau : local.tau_selected_sorted_loose) {
+		tau_pt_loose.push_back(tau.pt());
+		tau_eta_loose.push_back(tau.eta());
+		tau_phi_loose.push_back(tau.phi());
+		tau_mass_loose.push_back(tau.mass());
+	}
+
+	for (auto & tau : local.tau_selected_sorted_medium) {
+		tau_pt_medium.push_back(tau.pt());
+		tau_eta_medium.push_back(tau.eta());
+		tau_phi_medium.push_back(tau.phi());
+		tau_mass_medium.push_back(tau.mass());
+	}
+
+	for (auto & tau : local.tau_selected_sorted_tight) {
+		tau_pt_tight.push_back(tau.pt());
+		tau_eta_tight.push_back(tau.eta());
+		tau_phi_tight.push_back(tau.phi());
+		tau_mass_tight.push_back(tau.mass());
+	}
+
+	// jets
+	for (size_t i = 0; i < local.jets_selected_sorted.size(); ++i) {
+		jet_pt.push_back(local.jets_selected_sorted[i].pt());
+		jet_eta.push_back(local.jets_selected_sorted[i].eta());
+		jet_phi.push_back(local.jets_selected_sorted[i].phi());
+		jet_mass.push_back(local.jets_selected_sorted[i].mass());
+	}
+
+	// b-jets
+	for (size_t i = 0; i < local.jets_selected_tag_sorted.size(); ++i) {
+		bjet_pt.push_back(local.jets_selected_tag_sorted[i].pt());
+		bjet_eta.push_back(local.jets_selected_tag_sorted[i].eta());
+		bjet_phi.push_back(local.jets_selected_tag_sorted[i].phi());
+		bjet_mass.push_back(local.jets_selected_tag_sorted[i].mass());
+	}
+	
+	// GenParticle Information
+	// mediators
+	for (size_t i = 0; i < gen.x.size(); ++i) {
+		gen_x_pdgId.push_back(gen.x[i].pdgId());
+		gen_x_status.push_back(gen.x[i].status());
+		gen_x_pt.push_back(gen.x[i].pt());
+		gen_x_eta.push_back(gen.x[i].eta());
+		gen_x_phi.push_back(gen.x[i].phi());
+		gen_x_mass.push_back(gen.x[i].mass());
+	}
+
+	// tops
+	for (size_t i = 0; i < gen.tops.size(); ++i) {
+		gen_top_pdgId.push_back(gen.tops[i].pdgId());
+		gen_top_status.push_back(gen.tops[i].status());
+		gen_top_pt.push_back(gen.tops[i].pt());
+		gen_top_eta.push_back(gen.tops[i].eta());
+		gen_top_phi.push_back(gen.tops[i].phi());
+		gen_top_mass.push_back(gen.tops[i].mass());
+	}
+
+	// mediator daughters
+	for (size_t i = 0; i < gen.x_daughters.size(); ++i) {
+		gen_xDaug_pdgId.push_back(gen.x_daughters[i].pdgId());
+		gen_xDaug_status.push_back(gen.x_daughters[i].status());
+		gen_xDaug_pt.push_back(gen.x_daughters[i].pt());
+		gen_xDaug_eta.push_back(gen.x_daughters[i].eta());
+		gen_xDaug_phi.push_back(gen.x_daughters[i].phi());
+		gen_xDaug_mass.push_back(gen.x_daughters[i].mass());
+	}
+
+	gen_tau_class = gen.tau_class;
+
+	// top daughters
+	for (size_t i = 0; i < gen.top_daughters.size(); ++i) {
+		gen_topDaug_pdgId.push_back(gen.top_daughters[i].pdgId());
+		gen_topDaug_status.push_back(gen.top_daughters[i].status());
+		gen_topDaug_pt.push_back(gen.top_daughters[i].pt());
+		gen_topDaug_eta.push_back(gen.top_daughters[i].eta());
+		gen_topDaug_phi.push_back(gen.top_daughters[i].phi());
+		gen_topDaug_mass.push_back(gen.top_daughters[i].mass());
+	}
+
+	// w daughters
+	for (size_t i = 0; i < gen.w_daughters.size(); ++i) {
+		gen_wDaug_pdgId.push_back(gen.w_daughters[i].pdgId());
+		gen_wDaug_status.push_back(gen.w_daughters[i].status());
+		gen_wDaug_pt.push_back(gen.w_daughters[i].pt());
+		gen_wDaug_eta.push_back(gen.w_daughters[i].eta());
+		gen_wDaug_phi.push_back(gen.w_daughters[i].phi());
+		gen_wDaug_mass.push_back(gen.w_daughters[i].mass());
+	}
+
+	eventTree->Fill();
 }
 
 #endif

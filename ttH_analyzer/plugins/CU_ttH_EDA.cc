@@ -38,7 +38,7 @@ CU_ttH_EDA::CU_ttH_EDA(const edm::ParameterSet &iConfig)
 	*/
 
 	/// temporary mock-up parameters
-	MAODHelper_era = "2012_53x";
+	MAODHelper_era = "2015_74x";
 	MAODHelper_sample_nr = 2500;
 
 	total_xs = 831.76;
@@ -46,11 +46,29 @@ CU_ttH_EDA::CU_ttH_EDA(const edm::ParameterSet &iConfig)
 	int_lumi = 10000;
 	weight_sample = int_lumi * total_xs / sample_n;
 
-	Load_configuration(static_cast<string>("Configs/config_analyzer_tau.yaml"));
+	edm::FileInPath CMSSW_path("config_analyzer_CMSSW74X.yaml");
+	std::string yaml_config_file = CMSSW_path.fullPath();
+	Load_configuration(static_cast<string>(yaml_config_file));
 
 	Set_up_tokens();
-	Set_up_histograms();
+	Setup_Tree();
+
+	if (analysis_type == Analyze_taus_dilepton) {
+		cuts = {
+			"single_lep_trig",">= 1 tau",">= 2 leptons",
+			"same sign leptons","min_njets","min_nbtags"
+		};
+	}
+	else if (analysis_type == Analyze_taus_lepton_jet) {
+		cuts = {
+			"single_e_trig",">= 1 e",">= 2 taus",
+			"100<mTT<150","min_njets","min_nbtsgs"
+		};
+	}
+	Set_up_histograms(cuts);
 	Set_up_output_files();
+	
+	
 }
 
 /// Destructor
@@ -91,11 +109,15 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 	Check_vertices_set_MAODhelper(handle.vertices);
 	// 	Check_beam_spot(BS);	// dumb implementation
 
+	// Setting rho
+	auto rho = handle.srcRho;
+	miniAODhelper.SetRho(*rho);
+	
 	/// Get and set miniAODhelper's jet corrector from the event setup
 	miniAODhelper.SetJetCorrector(
 		JetCorrector::getJetCorrector(jet_corrector, iSetup));
 
-	// 	weight_gen = event_gen_info.product()->weight();
+	weight_gen = handle.event_gen_info.product()->weight();
 	local.weight = weight_sample * (handle.event_gen_info.product()->weight());
 
 	if (trigger_stats) {
@@ -108,18 +130,34 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 		*(handle.electrons), min_tight_lepton_pT, electronID::electronPhys14M);
 	local.mu_selected = miniAODhelper.GetSelectedMuons(
 		*(handle.muons), min_tight_lepton_pT, muonID::muonTight);
-	local.tau_selected = miniAODhelper.GetSelectedTaus(
-		*(handle.taus),	min_tight_tau_pT, tau::tight);   // which tauID?
+	local.tau_selected_noniso = miniAODhelper.GetSelectedTaus(
+		*(handle.taus),min_tau_pT, tau::nonIso);
+	local.tau_selected_loose = miniAODhelper.GetSelectedTaus(
+		*(handle.taus),	min_tau_pT, tau::loose);
+	local.tau_selected_medium = miniAODhelper.GetSelectedTaus(
+		*(handle.taus),	min_tau_pT, tau::medium);
+	local.tau_selected_tight = miniAODhelper.GetSelectedTaus(
+		*(handle.taus),	min_tau_pT, tau::tight);
 
 	local.n_electrons = static_cast<int>(local.e_selected.size());
 	local.n_muons = static_cast<int>(local.mu_selected.size());
-	local.n_taus = static_cast<int>(local.tau_selected.size());
+	local.n_taus_noniso = static_cast<int>(local.tau_selected_noniso.size());
+	local.n_taus_loose = static_cast<int>(local.tau_selected_loose.size());
+	local.n_taus_medium = static_cast<int>(local.tau_selected_medium.size());
+	local.n_taus_tight = static_cast<int>(local.tau_selected_tight.size());
 
 	/// Sort leptons by pT
 	local.mu_selected_sorted = miniAODhelper.GetSortedByPt(local.mu_selected);
 	local.e_selected_sorted = miniAODhelper.GetSortedByPt(local.e_selected);
-	local.tau_selected_sorted = miniAODhelper.GetSortedByPt(local.tau_selected);
-
+	local.tau_selected_sorted_noniso
+		= miniAODhelper.GetSortedByPt(local.tau_selected_noniso);
+	local.tau_selected_sorted_loose
+		= miniAODhelper.GetSortedByPt(local.tau_selected_loose);
+	local.tau_selected_sorted_medium
+		= miniAODhelper.GetSortedByPt(local.tau_selected_medium);
+	local.tau_selected_sorted_tight
+		= miniAODhelper.GetSortedByPt(local.tau_selected_tight);
+	
 	/// Jet selection
 	local.jets_raw = miniAODhelper.GetUncorrectedJets(handle.jets);
 	local.jets_no_mu =
@@ -154,6 +192,9 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 		handle.METs->front(); // miniAODhelper.GetCorrectedMET( METs.at(0),
 							  // pfJets_forMET, iSysType );
 
+
+	Get_GenInfo(handle.MC_particles, handle.MC_packed, gen);  // MC Truth
+	
 	/// Check tags, fill hists, print events
 	if (analysis_type == Analyze_lepton_jet) {
 		Check_Fill_Print_ej(local);
@@ -167,22 +208,26 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 	}
 
 	if (analysis_type == Analyze_taus_dilepton) {
-		Check_Fill_Print_dimutauh(local);
-		Check_Fill_Print_dieletauh(local);
-		Check_Fill_Print_elemutauh(local);
+		Fill_Tau_Eff_Hist(gen,local);
+		
+		bool draw_cut_flow = true;   // Todo: move this flag to config file
+		bool cut_passed = pass_multi_cuts(local, cuts, draw_cut_flow, h_tth_syncex_dileptauh, 1);
+		
+		if (cut_passed) {
+		  //Write_to_Tree(gen, local, eventTree);
+		}
 	}
 
 	if (analysis_type == Analyze_taus_lepton_jet) {
-		Check_Fill_Print_eleditauh(local);
-		Check_Fill_Print_muditauh(local);
+		bool draw_cut_flow = true;   // Todo: move this flag to config file
+		bool cut_passed = pass_multi_cuts(local, cuts, draw_cut_flow, h_tth_syncex_eleditauh, 1);
+		if (cut_passed) {
+		  //Write_to_Tree(gen, local, eventTree);
+		}
 	}
 	
-	/// generator information
-	bool get_gen_info = true;
-	if (get_gen_info) {
-		Get_GenInfo(handle.MC_particles, handle.MC_packed, gen);
-		Write_to_Tree(gen, eventTree);
-	}
+	Write_to_Tree(gen, local, eventTree);
+	
 }
 
 // ------------ method called once each job just before starting event loop
@@ -193,7 +238,6 @@ void CU_ttH_EDA::beginJob()
 
 	event_count = 0;
 
-	Set_up_Tree();
 }
 
 // ------------ method called once each job just after ending the event loop
@@ -344,6 +388,7 @@ void CU_ttH_EDA::endRun(const edm::Run &, const edm::EventSetup &)
 	std::cout
 		<< "***************************************************************"
 		<< std::endl;
+
 }
 
 // ------------ method called when starting to processes a luminosity block

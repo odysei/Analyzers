@@ -49,7 +49,7 @@ void CU_ttH_EDA::Close_output_files()
 	}
 }
 
-void CU_ttH_EDA::Set_up_histograms()
+void CU_ttH_EDA::Set_up_histograms(std::vector<string> cuts)
 {
 	// 	h_electron_selection = fs_->make<TH1D>("h_electron_selection",
 	// ";electron cut", 12, 0 , 12 );
@@ -87,6 +87,7 @@ void CU_ttH_EDA::Set_up_histograms()
 	// 	h_muon_selection->GetXaxis()->SetBinLabel(11, "dZ");
 	// 	h_muon_selection->GetXaxis()->SetBinLabel(12, "relIso < 0.1");
 
+	
 	if (analysis_type == Analyze_lepton_jet) {
 		h_tth_syncex1_ele =
 			fs_->make<TH1D>("h_tth_syncex1_ele", ";cut", 8, 0, 8);
@@ -144,54 +145,79 @@ void CU_ttH_EDA::Set_up_histograms()
 	}
 
 	if (analysis_type == Analyze_taus_dilepton) {
-		h_tth_syncex_dimutauh =
-			fs_->make<TH1D>("h_tth_syncex_dimutauh", ";cut", 6, 0, 6);
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(2, "Double mu trig");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
+		auto nbins = cuts.size()+1;
+		h_tth_syncex_dileptauh =
+			fs_->make<TH1D>("h_tth_syncex_dileptauh", ";cut", nbins, 0, nbins);
+		h_tth_syncex_dileptauh->GetXaxis()->SetBinLabel(1, "All events");
+		//h_tth_syncex_dileptauh->GetXaxis()->SetBinLabel(2, "Weighted");
+		int itr = 2;
+		for (auto & icut : cuts) {
+			h_tth_syncex_dileptauh->GetXaxis()->SetBinLabel(itr++,icut.c_str());
+		}
 
-		h_tth_syncex_dieletauh =
-			fs_->make<TH1D>("h_tth_syncex_dieletauh", ";cut", 6, 0, 6);
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(2, "Double e trig");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
-		
-		h_tth_syncex_elemutauh =
-			fs_->make<TH1D>("h_tth_syncex_elemutauh", ";cut", 6, 0, 6);
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(2, "e mu trig");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
+		// Tau selection efficiency histograms
+		h_num_genHadTau = fs_->make<TH1D>("h_num_genHadTau","", 4, 0, 4);
+		h_genHadTau_pt = fs_->make<TH1D>("h_genHadTau_pt", "", 80, 0, 400);
+		h_genHadTau_eta = fs_->make<TH1D>("h_genHadTau_eta","", 50,-2.5,2.5);
+		h_genHadTau_phi = fs_->make<TH1D>("h_genHadTau_phi","", 64, -3.2, 3.2);
+		//h_num_FakeTau = fs_make<TH1D>("h_num_FakeTau","", 4, 0, 4);
+
+		h_num_selectedTau_noniso =
+			fs_->make<TH1D>("h_num_selectedTau_noniso","", 4, 0, 4);
+		h_selectedTau_noniso_genpt =
+			fs_->make<TH1D>("h_selectedTau_noniso_genpt", "", 80, 0, 400);
+		h_selectedTau_noniso_geneta =
+			fs_->make<TH1D>("h_selectedTau_noniso_geneta","", 50,-2.5,2.5);
+		h_selectedTau_noniso_genphi =
+			fs_->make<TH1D>("h_selectedTau_noniso_genphi","", 64, -3.2, 3.2);
+
+		h_num_selectedTau_loose =
+			fs_->make<TH1D>("h_num_selectedTau_loose","", 4, 0, 4);
+		h_selectedTau_loose_genpt =
+			fs_->make<TH1D>("h_selectedTau_loose_genpt", "", 80, 0, 400);
+		h_selectedTau_loose_geneta =
+			fs_->make<TH1D>("h_selectedTau_loose_geneta","", 50,-2.5,2.5);
+		h_selectedTau_loose_genphi =
+			fs_->make<TH1D>("h_selectedTau_loose_genphi","", 64, -3.2, 3.2);
+
+		h_num_selectedTau_medium =
+			fs_->make<TH1D>("h_num_selectedTau_medium","", 4, 0, 4);
+		h_selectedTau_medium_genpt =
+			fs_->make<TH1D>("h_selectedTau_medium_genpt", "", 80, 0, 400);
+		h_selectedTau_medium_geneta =
+			fs_->make<TH1D>("h_selectedTau_medium_geneta","", 50,-2.5,2.5);
+		h_selectedTau_medium_genphi =
+			fs_->make<TH1D>("h_selectedTau_medium_genphi","", 64, -3.2, 3.2);
+
+		h_num_selectedTau_tight =
+			fs_->make<TH1D>("h_num_selectedTau_tight","", 4, 0, 4);
+		h_selectedTau_tight_genpt =
+			fs_->make<TH1D>("h_selectedTau_tight_genpt", "", 80, 0, 400);
+		h_selectedTau_tight_geneta =
+			fs_->make<TH1D>("h_selectedTau_tight_geneta","", 50,-2.5,2.5);
+		h_selectedTau_tight_genphi =
+			fs_->make<TH1D>("h_selectedTau_tight_genphi","", 64, -3.2, 3.2);
 	}
-
+	
 	if (analysis_type == Analyze_taus_lepton_jet) {
+		auto nbins = cuts.size()+1;
 		h_tth_syncex_eleditauh =
-			fs_->make<TH1D>("h_tth_syncex_eleditauh", ";cut", 7, 0, 7);
+			fs_->make<TH1D>("h_tth_syncex_eleditauh", ";cut", nbins, 0, nbins);
 		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(2, "Single e trig");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(3, ">=1 n_electrons");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(4, ">=2 n_taus");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(5, "120 < mTT < 130");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(6, "n_jets cut");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(7, "n_btags cut");
+		//h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(2, "Weighted");
+		int itr_e = 2;
+		for (auto & icut : cuts) {
+			h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(itr_e++,icut.c_str());
+		}
 
 		h_tth_syncex_muditauh =
-			fs_->make<TH1D>("h_tth_syncex_muditauh", ";cut", 7, 0, 7);
+			fs_->make<TH1D>("h_tth_syncex_muditauh", ";cut", nbins, 0, nbins);
 		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(2, "Single e trig");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(3, ">=1 n_electrons");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(4, ">=2 n_taus");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(5, "120 < mTT < 130");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(6, "n_jets cut");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(7, "n_btags cut");
+		//h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(2, "Weighted");
+		int itr_mu = 2;
+		for (auto & icut : cuts) {
+			h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(itr_mu++,icut.c_str());
+		}
 	}
 }
 
@@ -318,6 +344,8 @@ void CU_ttH_EDA::Set_up_tokens()
 		edm::InputTag(std::string("slimmedSecondaryVertices")));
 	token.PU_info = consumes<std::vector<PileupSummaryInfo>>(
 		edm::InputTag(std::string("addPileupInfo")));
+	token.srcRho = consumes<double>(
+		edm::InputTag("fixedGridRhoFastjetAll"));
 
 	token.electrons = consumes<pat::ElectronCollection>(
 		edm::InputTag(std::string("slimmedElectrons")));
@@ -348,47 +376,92 @@ void CU_ttH_EDA::Set_up_tokens()
 		edm::InputTag(std::string("packedGenParticles")));
 }
 
-void CU_ttH_EDA::Set_up_Tree()
+void CU_ttH_EDA::Setup_Tree()
 {
 
-	edm::Service<TFileService> fs;
+	eventTree = fs_->make<TTree>("EventTree", "Event tree");
 
-	eventTree = fs->make<TTree>("GenParticlesTree", "Event tree");
+	eventTree->Branch("n_electrons", &n_electrons);
+	eventTree->Branch("n_muons", &n_muons);
+	eventTree->Branch("n_taus_loose", &n_taus_loose);
+	eventTree->Branch("n_taus_medium", &n_taus_medium);
+	eventTree->Branch("n_taus_tight", &n_taus_tight);
+	eventTree->Branch("n_jets", &n_jets);
+	eventTree->Branch("n_btags", &n_btags);
 
-	eventTree->Branch("x_pdgId", &x_pdgId);
-	eventTree->Branch("x_status", &x_status);
-	eventTree->Branch("x_pt", &x_pt);
-	eventTree->Branch("x_eta", &x_eta);
-	eventTree->Branch("x_phi", &x_phi);
-	eventTree->Branch("x_mass", &x_mass);
+	eventTree->Branch("e_pt", &e_pt);
+	eventTree->Branch("e_eta", &e_eta);
+	eventTree->Branch("e_phi", &e_phi);
+	eventTree->Branch("e_mass", &e_mass);
+	
+	eventTree->Branch("mu_pt", &mu_pt);
+	eventTree->Branch("mu_eta", &mu_eta);
+	eventTree->Branch("mu_phi", &mu_phi);
+	eventTree->Branch("mu_mass", &mu_mass);
 
-	eventTree->Branch("top_pdgId", &top_pdgId);
-	eventTree->Branch("top_status", &top_status);
-	eventTree->Branch("top_pt", &top_pt);
-	eventTree->Branch("top_eta", &top_eta);
-	eventTree->Branch("top_phi", &top_phi);
-	eventTree->Branch("top_mass", &top_mass);
+	eventTree->Branch("tau_pt_noniso", &tau_pt_noniso);
+	eventTree->Branch("tau_eta_noniso", &tau_eta_noniso);
+	eventTree->Branch("tau_phi_noniso", &tau_phi_noniso);
+	eventTree->Branch("tau_mass_noniso", &tau_mass_noniso);
+	eventTree->Branch("tau_pt_loose", &tau_pt_loose);
+	eventTree->Branch("tau_eta_loose", &tau_eta_loose);
+	eventTree->Branch("tau_phi_loose", &tau_phi_loose);
+	eventTree->Branch("tau_mass_loose", &tau_mass_loose);
+	eventTree->Branch("tau_pt_medium", &tau_pt_medium);
+	eventTree->Branch("tau_eta_medium", &tau_eta_medium);
+	eventTree->Branch("tau_phi_medium", &tau_phi_medium);
+	eventTree->Branch("tau_mass_medium", &tau_mass_medium);
+	eventTree->Branch("tau_pt_tight", &tau_pt_tight);
+	eventTree->Branch("tau_eta_tight", &tau_eta_tight);
+	eventTree->Branch("tau_phi_tight", &tau_phi_tight);
+	eventTree->Branch("tau_mass_tight", &tau_mass_tight);
+	
+	eventTree->Branch("jet_pt", &jet_pt);
+	eventTree->Branch("jet_eta", &jet_eta);
+	eventTree->Branch("jet_phi", &jet_phi);
+	eventTree->Branch("jet_mass", &jet_mass);
+	
+	eventTree->Branch("bjet_pt", &bjet_pt);
+	eventTree->Branch("bjet_eta", &bjet_eta);
+	eventTree->Branch("bjet_phi", &bjet_phi);
+	eventTree->Branch("bjet_mass", &bjet_mass);
+	
+	eventTree->Branch("gen_x_pdgId", &gen_x_pdgId);
+	eventTree->Branch("gen_x_status", &gen_x_status);
+	eventTree->Branch("gen_x_pt", &gen_x_pt);
+	eventTree->Branch("gen_x_eta", &gen_x_eta);
+	eventTree->Branch("gen_x_phi", &gen_x_phi);
+	eventTree->Branch("gen_x_mass", &gen_x_mass);
 
-	eventTree->Branch("x_daughter_pdgId", &xDaug_pdgId);
-	eventTree->Branch("x_daughter_status", &xDaug_status);
-	eventTree->Branch("x_daughter_pt", &xDaug_pt);
-	eventTree->Branch("x_daughter_eta", &xDaug_eta);
-	eventTree->Branch("x_daughter_phi", &xDaug_phi);
-	eventTree->Branch("x_daughter_mass", &xDaug_mass);
+	eventTree->Branch("gen_top_pdgId", &gen_top_pdgId);
+	eventTree->Branch("gen_top_status", &gen_top_status);
+	eventTree->Branch("gen_top_pt", &gen_top_pt);
+	eventTree->Branch("gen_top_eta", &gen_top_eta);
+	eventTree->Branch("gen_top_phi", &gen_top_phi);
+	eventTree->Branch("gen_top_mass", &gen_top_mass);
 
-	eventTree->Branch("top_daughter_pdgId", &topDaug_pdgId);
-	eventTree->Branch("top_daughter_status", &topDaug_status);
-	eventTree->Branch("top_daughter_pt", &topDaug_pt);
-	eventTree->Branch("top_daughter_eta", &topDaug_eta);
-	eventTree->Branch("top_daughter_phi", &topDaug_phi);
-	eventTree->Branch("top_daughter_mass", &topDaug_mass);
+	eventTree->Branch("gen_x_daughter_pdgId", &gen_xDaug_pdgId);
+	eventTree->Branch("gen_x_daughter_status", &gen_xDaug_status);
+	eventTree->Branch("gen_x_daughter_pt", &gen_xDaug_pt);
+	eventTree->Branch("gen_x_daughter_eta", &gen_xDaug_eta);
+	eventTree->Branch("gen_x_daughter_phi", &gen_xDaug_phi);
+	eventTree->Branch("gen_x_daughter_mass", &gen_xDaug_mass);
 
-	eventTree->Branch("w_daughter_pdgId", &wDaug_pdgId);
-	eventTree->Branch("w_daughter_status", &wDaug_status);
-	eventTree->Branch("w_daughter_pt", &wDaug_pt);
-	eventTree->Branch("w_daughter_eta", &wDaug_eta);
-	eventTree->Branch("w_daughter_phi", &wDaug_phi);
-	eventTree->Branch("w_daughter_mass", &wDaug_mass);
+	eventTree->Branch("gen_tau_class", &gen_tau_class);
+
+	eventTree->Branch("gen_top_daughter_pdgId", &gen_topDaug_pdgId);
+	eventTree->Branch("gen_top_daughter_status", &gen_topDaug_status);
+	eventTree->Branch("gen_top_daughter_pt", &gen_topDaug_pt);
+	eventTree->Branch("gen_top_daughter_eta", &gen_topDaug_eta);
+	eventTree->Branch("gen_top_daughter_phi", &gen_topDaug_phi);
+	eventTree->Branch("gen_top_daughter_mass", &gen_topDaug_mass);
+
+	eventTree->Branch("gen_w_daughter_pdgId", &gen_wDaug_pdgId);
+	eventTree->Branch("gen_w_daughter_status", &gen_wDaug_status);
+	eventTree->Branch("gen_w_daughter_pt", &gen_wDaug_pt);
+	eventTree->Branch("gen_w_daughter_eta", &gen_wDaug_eta);
+	eventTree->Branch("gen_w_daughter_phi", &gen_wDaug_phi);
+	eventTree->Branch("gen_w_daughter_mass", &gen_wDaug_mass);
 }
 
 #endif
