@@ -31,14 +31,44 @@
 */
 
 /// Constructor
-CU_ttH_EDA::CU_ttH_EDA(const edm::ParameterSet &iConfig)
+CU_ttH_EDA::CU_ttH_EDA(const edm::ParameterSet &iConfig):
+	// Analysis type
+	config_analysis_type (iConfig.getParameter<string>("analysis_type")),
+	// Generic
+	verbose_ (iConfig.getParameter<bool>("verbosity")),
+	dumpHLT_ (iConfig.getParameter<bool>("print_HLT_event_path")),
+	hltTag (iConfig.getParameter<string>("HLT_config_tag")),
+	filterTag (iConfig.getParameter<string>("filter_config_tag")),
+	// Triggers
+	trigger_stats (iConfig.getParameter<bool>("collect_trigger_stats")),
+	trigger_on_HLT_e (iConfig.getParameter<std::vector<string>>("HLT_electron_triggers")),
+	trigger_on_HLT_mu (iConfig.getParameter<std::vector<string>>("HLT_muon_triggers")),
+	trigger_on_HLT_ee (iConfig.getParameter<std::vector<string>>("HLT_electron_electron_triggers")),
+	trigger_on_HLT_emu (iConfig.getParameter<std::vector<string>>("HLT_electron_muon_triggers")),
+	trigger_on_HLT_mumu (iConfig.getParameter<std::vector<string>>("HLT_muon_muon_triggers")),
+	// Cuts
+	min_tight_lepton_pT (iConfig.getParameter<double>("min_tight_lepton_pT")),
+	min_ele_pT (iConfig.getParameter<double>("min_ele_pT")),
+	min_mu_pT (iConfig.getParameter<double>("min_mu_pT")),
+	min_tau_pT (iConfig.getParameter<double>("min_tau_pT")),
+	min_jet_pT (iConfig.getParameter<double>("min_jet_pT")),
+	min_bjet_pT (iConfig.getParameter<double>("min_bjet_pT")),
+	max_jet_eta (iConfig.getParameter<double>("max_jet_eta")),
+	max_bjet_eta (iConfig.getParameter<double>("max_bjet_eta")),
+	min_njets (iConfig.getParameter<int>("min_njets")),
+	min_nbtags (iConfig.getParameter<int>("min_nbtags")),
+	// Jets
+	jet_corrector (iConfig.getParameter<string>("jet_corrector")),
+	// miniAODhelper
+	isdata (iConfig.getParameter<bool>("using_real_data")),
+	MAODHelper_b_tag_strength (iConfig.getParameter<string>("b_tag_strength")[0])
 {
 	/*
 	 * now do whatever initialization is needed
 	*/
 
 	/// temporary mock-up parameters
-	MAODHelper_era = "2012_53x";
+	MAODHelper_era = "2015_74x";
 	MAODHelper_sample_nr = 2500;
 
 	total_xs = 831.76;
@@ -46,11 +76,17 @@ CU_ttH_EDA::CU_ttH_EDA(const edm::ParameterSet &iConfig)
 	int_lumi = 10000;
 	weight_sample = int_lumi * total_xs / sample_n;
 
-	Load_configuration(static_cast<string>("Configs/config_analyzer_tau.yaml"));
+	Load_configuration_set_type(config_analysis_type);
+	Load_configuration_MAODH(isdata);
+	
+	// Load_configuration(static_cast<string>("Configs/config_analyzer.yaml"));
 
-	Set_up_tokens();
+	Set_up_tokens(iConfig.getParameter<edm::ParameterSet>("input_tags"));
 	Set_up_histograms();
 	Set_up_output_files();
+
+	ntuple = new CU_ttH_EDA_Ntuple();
+	Set_up_Tree();
 }
 
 /// Destructor
@@ -71,7 +107,6 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 
 	/// Declaring local struct for data readout and manipulations
 	CU_ttH_EDA_event_vars local;
-	CU_ttH_EDA_gen_vars gen;
 
 	/// Triggers have not fired yet. Check_triggers, Check_filters will adjust
 	local.pass_single_e = false;
@@ -91,6 +126,10 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 	Check_vertices_set_MAODhelper(handle.vertices);
 	// 	Check_beam_spot(BS);	// dumb implementation
 
+	// Setting rho
+	auto rho = handle.srcRho;
+	miniAODhelper.SetRho(*rho);
+
 	/// Get and set miniAODhelper's jet corrector from the event setup
 	miniAODhelper.SetJetCorrector(
 		JetCorrector::getJetCorrector(jet_corrector, iSetup));
@@ -104,13 +143,24 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 	}
 
 	/// Lepton selection
-	local.e_selected = miniAODhelper.GetSelectedElectrons(
-		*(handle.electrons), min_tight_lepton_pT, electronID::electronPhys14M);
 	local.mu_selected = miniAODhelper.GetSelectedMuons(
-		*(handle.muons), min_tight_lepton_pT, muonID::muonTight);
-	local.tau_selected = miniAODhelper.GetSelectedTaus(
-		*(handle.taus),	min_tight_tau_pT, tau::tight);   // which tauID?
+		*(handle.muons), min_mu_pT, muonID::muonPreselection);
+	local.e_selected = miniAODhelper.GetSelectedElectrons(
+		*(handle.electrons), min_ele_pT, electronID::electronPreselection);
+	
+	// Should add tauID in leptonID package into MiniAODHelper
+	for (const auto& tau : *(handle.taus)) {
+		if (tau.userFloat("idPreselection")>0.5 and tau.pt()>min_tau_pT)
+			local.tau_selected.push_back(tau);
+	}
+	//local.tau_selected = miniAODhelper.GetSelectedTaus(
+	//	*(handle.taus),	min_tau_pT, tau::tauPreselection);
 
+	// remove overlap
+	local.e_selected = removeOverlapdR(local.e_selected, local.mu_selected, 0.05);
+	local.tau_selected = removeOverlapdR(local.tau_selected, local.mu_selected, 0.4);
+	local.tau_selected = removeOverlapdR(local.tau_selected, local.e_selected, 0.4);
+	
 	local.n_electrons = static_cast<int>(local.e_selected.size());
 	local.n_muons = static_cast<int>(local.mu_selected.size());
 	local.n_taus = static_cast<int>(local.tau_selected.size());
@@ -130,10 +180,15 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 		miniAODhelper.GetCorrectedJets(local.jets_no_mu_e, iEvent, iSetup);
 	local.jets_selected = miniAODhelper.GetSelectedJets(
 		local.jets_corrected, min_jet_pT, max_jet_eta, jetID::jetLoose, '-');
+	// overlap removal by dR
+	local.jets_selected = removeOverlapdR(local.jets_selected, local.mu_selected, 0.4);
+	local.jets_selected = removeOverlapdR(local.jets_selected, local.e_selected, 0.4);
+	local.jets_selected = removeOverlapdR(local.jets_selected, local.tau_selected, 0.4);
+
 	local.jets_selected_tag = miniAODhelper.GetSelectedJets(
 		local.jets_corrected, min_bjet_pT, max_bjet_eta, jetID::jetLoose,
 		MAODHelper_b_tag_strength);
-
+		
 	local.n_jets = static_cast<int>(local.jets_selected.size());
 	local.n_btags = static_cast<int>(local.jets_selected_tag.size());
 
@@ -145,15 +200,15 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 
 	/// Top and Higgs tagging using collections through handles. adjusts
 	/// local.<tag>
-	Top_tagger(handle.top_jets, local);
-	Higgs_tagger(handle.subfilter_jets, local);
+	//Top_tagger(handle.top_jets, local);
+	//Higgs_tagger(handle.subfilter_jets, local);
 
 	/// Get Corrected MET, !!!not yet used!!!
 	// may need to be placed in CU_ttH_EDA_event_vars
 	local.MET_corrected =
 		handle.METs->front(); // miniAODhelper.GetCorrectedMET( METs.at(0),
 							  // pfJets_forMET, iSysType );
-
+	
 	/// Check tags, fill hists, print events
 	if (analysis_type == Analyze_lepton_jet) {
 		Check_Fill_Print_ej(local);
@@ -165,24 +220,21 @@ void CU_ttH_EDA::analyze(const edm::Event &iEvent,
 		Check_Fill_Print_dielej(local);
 		Check_Fill_Print_elemuj(local);
 	}
-
-	if (analysis_type == Analyze_taus_dilepton) {
-		Check_Fill_Print_dimutauh(local);
-		Check_Fill_Print_dieletauh(local);
-		Check_Fill_Print_elemutauh(local);
-	}
-
-	if (analysis_type == Analyze_taus_lepton_jet) {
-		Check_Fill_Print_eleditauh(local);
-		Check_Fill_Print_muditauh(local);
-	}
 	
-	/// generator information
-	bool get_gen_info = true;
-	if (get_gen_info) {
-		Get_GenInfo(handle.MC_particles, handle.MC_packed, gen);
-		Write_to_Tree(gen, eventTree);
+	if (analysis_type == Analyze_tau_ssleptons) {
+	
 	}
+
+	if (analysis_type == Analyze_ditaus_lepton) {
+
+	}
+
+	// Write ntuple and fill eventTree
+	ntuple->initialize();
+	ntuple->write_ntuple(local);
+	
+	eventTree->Fill();
+	
 }
 
 // ------------ method called once each job just before starting event loop
@@ -192,8 +244,6 @@ void CU_ttH_EDA::beginJob()
 	TH1::SetDefaultSumw2(true);
 
 	event_count = 0;
-
-	Set_up_Tree();
 }
 
 // ------------ method called once each job just after ending the event loop

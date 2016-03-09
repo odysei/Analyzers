@@ -143,55 +143,12 @@ void CU_ttH_EDA::Set_up_histograms()
 		h_tth_syncex1_elemu->GetXaxis()->SetBinLabel(6, ">=1 b-tags");
 	}
 
-	if (analysis_type == Analyze_taus_dilepton) {
-		h_tth_syncex_dimutauh =
-			fs_->make<TH1D>("h_tth_syncex_dimutauh", ";cut", 6, 0, 6);
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(2, "Double mu trig");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_dimutauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
+	if (analysis_type == Analyze_tau_ssleptons) {
 
-		h_tth_syncex_dieletauh =
-			fs_->make<TH1D>("h_tth_syncex_dieletauh", ";cut", 6, 0, 6);
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(2, "Double e trig");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_dieletauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
-		
-		h_tth_syncex_elemutauh =
-			fs_->make<TH1D>("h_tth_syncex_elemutauh", ";cut", 6, 0, 6);
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(2, "e mu trig");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(3, "Same sign leptons");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(4, ">=1 tau");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(5, "n_jets cut");
-		h_tth_syncex_elemutauh->GetXaxis()->SetBinLabel(6, "n_btags cut");
 	}
 
-	if (analysis_type == Analyze_taus_lepton_jet) {
-		h_tth_syncex_eleditauh =
-			fs_->make<TH1D>("h_tth_syncex_eleditauh", ";cut", 7, 0, 7);
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(2, "Single e trig");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(3, ">=1 n_electrons");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(4, ">=2 n_taus");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(5, "120 < mTT < 130");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(6, "n_jets cut");
-		h_tth_syncex_eleditauh->GetXaxis()->SetBinLabel(7, "n_btags cut");
+	if (analysis_type == Analyze_ditaus_lepton) {
 
-		h_tth_syncex_muditauh =
-			fs_->make<TH1D>("h_tth_syncex_muditauh", ";cut", 7, 0, 7);
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(1, "All events");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(2, "Single e trig");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(3, ">=1 n_electrons");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(4, ">=2 n_taus");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(5, "120 < mTT < 130");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(6, "n_jets cut");
-		h_tth_syncex_muditauh->GetXaxis()->SetBinLabel(7, "n_btags cut");
 	}
 }
 
@@ -303,7 +260,7 @@ void CU_ttH_EDA::Set_up_output_files()
 	}
 }
 
-void CU_ttH_EDA::Set_up_tokens()
+void CU_ttH_EDA::Set_up_tokens(const edm::ParameterSet &config)
 {
 	token.event_gen_info =
 		consumes<GenEventInfoProduct>(edm::InputTag(std::string("generator")));
@@ -313,82 +270,51 @@ void CU_ttH_EDA::Set_up_tokens()
 		std::string("TriggerResults"), std::string(""), filterTag));
 
 	token.vertices = consumes<reco::VertexCollection>(
-		edm::InputTag(std::string("offlineSlimmedPrimaryVertices")));
+	    config.getParameter<edm::InputTag>("pv"));
 	token.sec_vertices = consumes<reco::VertexCompositePtrCandidateCollection>(
-		edm::InputTag(std::string("slimmedSecondaryVertices")));
+	    config.getParameter<edm::InputTag>("sv"));
 	token.PU_info = consumes<std::vector<PileupSummaryInfo>>(
-		edm::InputTag(std::string("addPileupInfo")));
-
+	    config.getParameter<edm::InputTag>("pileup"));
+	token.srcRho = consumes<double>(
+	    config.getParameter<edm::InputTag>("rho"));
 	token.electrons = consumes<pat::ElectronCollection>(
-		edm::InputTag(std::string("slimmedElectrons")));
+	    config.getParameter<edm::InputTag>("electrons"));
 	token.muons = consumes<pat::MuonCollection>(
-		edm::InputTag(std::string("slimmedMuons")));
+		config.getParameter<edm::InputTag>("muons"));
 	token.taus = consumes<pat::TauCollection>(
-		edm::InputTag(std::string("slimmedTaus")));
-
-	token.jets =
-		consumes<pat::JetCollection>(edm::InputTag(std::string("slimmedJets")));
-	token.METs =
-		consumes<pat::METCollection>(edm::InputTag(std::string("slimmedMETs")));
-
-	token.MC_particles = consumes<reco::GenParticleCollection>(
-		edm::InputTag(std::string("prunedGenParticles")));
+	    config.getParameter<edm::InputTag>("taus"));
+	token.jets = consumes<pat::JetCollection>(
+	    config.getParameter<edm::InputTag>("jets"));
+	token.METs = consumes<pat::METCollection>(
+	    config.getParameter<edm::InputTag>("mets"));
 	token.PF_candidates = consumes<pat::PackedCandidateCollection>(
-		edm::InputTag(std::string("packedPFCandidates")));
-
-	token.BS =
-		consumes<reco::BeamSpot>(edm::InputTag(std::string("offlineBeamSpot")));
-
-	token.top_jets = consumes<boosted::HTTTopJetCollection>(
-		edm::InputTag("HTTTopJetsPFMatcher", "heptopjets", "p"));
-	token.subfilter_jets = consumes<boosted::SubFilterJetCollection>(
-		edm::InputTag("CA12JetsCA3FilterjetsPFMatcher", "subfilterjets", "p"));
-
+	    config.getParameter<edm::InputTag>("pfcand"));
+	token.BS = consumes<reco::BeamSpot>(
+	    config.getParameter<edm::InputTag>("beamspot"));
+	//token.top_jets = consumes<boosted::HTTTopJetCollection>(
+	//	edm::InputTag("HTTTopJetsPFMatcher", "heptopjets", "p"));
+	//token.subfilter_jets = consumes<boosted::SubFilterJetCollection>(
+	//	edm::InputTag("CA12JetsCA3FilterjetsPFMatcher", "subfilterjets", "p"));	
+	token.MC_particles = consumes<reco::GenParticleCollection>(
+	    config.getParameter<edm::InputTag>("prunedgen"));
 	token.MC_packed = consumes<pat::PackedGenParticleCollection>(
-		edm::InputTag(std::string("packedGenParticles")));
+	    config.getParameter<edm::InputTag>("packedgen"));
 }
 
 void CU_ttH_EDA::Set_up_Tree()
 {
-
-	edm::Service<TFileService> fs;
-
-	eventTree = fs->make<TTree>("GenParticlesTree", "Event tree");
-
-	eventTree->Branch("x_pdgId", &x_pdgId);
-	eventTree->Branch("x_status", &x_status);
-	eventTree->Branch("x_pt", &x_pt);
-	eventTree->Branch("x_eta", &x_eta);
-	eventTree->Branch("x_phi", &x_phi);
-	eventTree->Branch("x_mass", &x_mass);
-
-	eventTree->Branch("top_pdgId", &top_pdgId);
-	eventTree->Branch("top_status", &top_status);
-	eventTree->Branch("top_pt", &top_pt);
-	eventTree->Branch("top_eta", &top_eta);
-	eventTree->Branch("top_phi", &top_phi);
-	eventTree->Branch("top_mass", &top_mass);
-
-	eventTree->Branch("x_daughter_pdgId", &xDaug_pdgId);
-	eventTree->Branch("x_daughter_status", &xDaug_status);
-	eventTree->Branch("x_daughter_pt", &xDaug_pt);
-	eventTree->Branch("x_daughter_eta", &xDaug_eta);
-	eventTree->Branch("x_daughter_phi", &xDaug_phi);
-	eventTree->Branch("x_daughter_mass", &xDaug_mass);
-
-	eventTree->Branch("top_daughter_pdgId", &topDaug_pdgId);
-	eventTree->Branch("top_daughter_status", &topDaug_status);
-	eventTree->Branch("top_daughter_pt", &topDaug_pt);
-	eventTree->Branch("top_daughter_eta", &topDaug_eta);
-	eventTree->Branch("top_daughter_phi", &topDaug_phi);
-	eventTree->Branch("top_daughter_mass", &topDaug_mass);
-
-	eventTree->Branch("w_daughter_pdgId", &wDaug_pdgId);
-	eventTree->Branch("w_daughter_status", &wDaug_status);
-	eventTree->Branch("w_daughter_pt", &wDaug_pt);
-	eventTree->Branch("w_daughter_eta", &wDaug_eta);
-	eventTree->Branch("w_daughter_phi", &wDaug_phi);
-	eventTree->Branch("w_daughter_mass", &wDaug_mass);
+	eventTree = fs_->make<TTree>("eventTree", "Event tree");
+	
+	/*
+	// If ntuple class is inherited from Root TClass (ToDo)
+	//
+	//eventTree -> Branch("ntuple_", "CU_ttH_EDA_Ntuple", &ntuple);
+	//std::cout << "IsTObject :" << ntuple->IsTObject() <<  std::endl;
+	//std::cout << "GetNdata() :" << ntuple->GetNdata() << std::endl;
+	//std::cout << "CanSplit() :" << ntuple->CanSplit() << std::endl;
+	//ntuple->Dump();
+	*/
+	ntuple->set_up_branches(eventTree);
 }
 
 #endif

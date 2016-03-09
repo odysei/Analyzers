@@ -56,9 +56,9 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
 /// Higgs and top tagger
-#include "MiniAOD/BoostedObjects/interface/HTTTopJet.h"
-#include "MiniAOD/BoostedObjects/interface/SubFilterJet.h"
-#include "BoostedTTH/BoostedAnalyzer/interface/BoostedUtils.hpp"
+//#include "MiniAOD/BoostedObjects/interface/HTTTopJet.h"
+//#include "MiniAOD/BoostedObjects/interface/SubFilterJet.h"
+//#include "BoostedTTH/BoostedAnalyzer/interface/BoostedUtils.hpp"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
@@ -79,6 +79,7 @@ struct edm_Handles {
 	Handle<reco::VertexCollection> vertices;
 	Handle<reco::VertexCompositePtrCandidateCollection> sec_vertices;
 	Handle<std::vector<PileupSummaryInfo>> PU_info;
+	Handle<double> srcRho;
 
 	Handle<pat::ElectronCollection> electrons;
 	Handle<pat::MuonCollection> muons;
@@ -92,8 +93,8 @@ struct edm_Handles {
 
 	Handle<reco::BeamSpot> BS;
 
-	Handle<boosted::HTTTopJetCollection> top_jets;
-	Handle<boosted::SubFilterJetCollection> subfilter_jets;
+	//Handle<boosted::HTTTopJetCollection> top_jets;
+	//Handle<boosted::SubFilterJetCollection> subfilter_jets;
 
 	Handle<pat::PackedGenParticleCollection> MC_packed;
 };
@@ -106,6 +107,7 @@ struct edm_Tokens {
 	EDGetTokenT<reco::VertexCollection> vertices;
 	EDGetTokenT<reco::VertexCompositePtrCandidateCollection> sec_vertices;
 	EDGetTokenT<std::vector<PileupSummaryInfo>> PU_info;
+	EDGetTokenT<double> srcRho;
 
 	EDGetTokenT<pat::ElectronCollection> electrons;
 	EDGetTokenT<pat::MuonCollection> muons;
@@ -119,8 +121,8 @@ struct edm_Tokens {
 
 	EDGetTokenT<reco::BeamSpot> BS;
 
-	EDGetTokenT<boosted::HTTTopJetCollection> top_jets;
-	EDGetTokenT<boosted::SubFilterJetCollection> subfilter_jets;
+	//EDGetTokenT<boosted::HTTTopJetCollection> top_jets;
+	//EDGetTokenT<boosted::SubFilterJetCollection> subfilter_jets;
 	
 	EDGetTokenT<pat::PackedGenParticleCollection> MC_packed;
 };

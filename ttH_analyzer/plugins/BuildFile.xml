@@ -1,6 +1,7 @@
 <use name = "FWCore/Framework" />
 <use name = "FWCore/PluginManager" />
 <use name = "FWCore/ParameterSet" />
+<use name = "FWCore/ServiceRegistry" />
 <use name = "DataFormats/BeamSpot" />
 <use name = "DataFormats/Candidate" />
 <use name = "DataFormats/HepMCCandidate" />
@@ -8,10 +9,17 @@
 <use name = "DataFormats/RecoCandidate" />
 <use name = "DataFormats/VertexReco" />
 <use name = "PhysicsTools/Utilities" />
+<use name = "CommonTools/UtilAlgos" />
 <use name = "SimDataFormats/PileupSummaryInfo" />
+<use name = "SimDataFormats/GeneratorProducts" />
 <use name = "HLTrigger/HLTcore" />
 <use name = "MiniAOD/MiniAODHelper" />
+<use name = "Analyzers/ttH_analyzer" />
+<ise name = "root" />
+<use name = "rootmath" />
+<!--
 <use name = "MiniAOD/BoostedObjects" />
 <use name = "BoostedTTH/BoostedAnalyzer" />
+-->
 <use name = "yaml-cpp" />
 <flags EDM_PLUGIN = "1" />
